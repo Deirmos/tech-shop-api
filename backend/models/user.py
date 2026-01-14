@@ -1,8 +1,12 @@
 from sqlalchemy import Integer, String, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from typing import List
+from typing import List, TYPE_CHECKING
 
 from backend.core.database import Base
+
+if TYPE_CHECKING:
+    from backend.models.order import Order
+    from backend.models.cart import CartItem
 
 class User(Base):
     
@@ -19,4 +23,10 @@ class User(Base):
     orders: Mapped[List["Order"]] = relationship(
         "Order",
         back_populates="user"
+    )
+
+    cart_items: Mapped[List["CartItem"]] = relationship(
+        "CartItem",
+        back_populates="user",
+        cascade="all, delete-orphan"
     )

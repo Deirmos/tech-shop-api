@@ -21,6 +21,7 @@ from backend.models.product import Product
 from backend.models.order_item import OrderItem
 from backend.models.order import Order
 from backend.models.category import Category
+from backend.models.cart import CartItem
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

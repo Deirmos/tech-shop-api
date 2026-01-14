@@ -1,8 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 from fastapi import HTTPException, status
-from typing import Optional
-from decimal import Decimal
 from slugify import slugify
 
 from backend.crud.category import category_crud

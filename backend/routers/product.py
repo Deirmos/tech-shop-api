@@ -134,7 +134,7 @@ async def edit_product_by_id(
 
     return product
 
-@router.post("/", response_model=ProductResponse)
+@admin_router.post("/", response_model=ProductResponse)
 async def create_product(
     product_data: ProductCreate,
     user: User = Depends(get_current_admin_user),

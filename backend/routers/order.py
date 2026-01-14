@@ -54,7 +54,7 @@ async def get_order_by_id(
 
     return order
 
-@router.put("/status/{order_id}", response_model=OrderResponse)
+@admin_router.put("/status/{order_id}", response_model=OrderResponse)
 async def edit_order_status_by_id(
     order_id: int,
     new_status: OrderStatus,
@@ -85,4 +85,12 @@ async def get_all_orders_admin(
     )
 
     return orders
+
+@router.post("/checkout", response_model=OrderResponse)
+async def checkout_cart(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    
+    return await order_service.create_order_from_cart(db, current_user.id)
 

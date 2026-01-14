@@ -9,6 +9,9 @@ from backend.models.order_item import OrderItem
 from backend.models.user import User
 from backend.core.utils.order_status_enums import OrderStatus
 
+from backend.crud.cart import cart_crud
+from backend.models.order import Order
+
 class OrderService:
 
     @staticmethod
@@ -169,5 +172,59 @@ class OrderService:
             skip=skip,
             limit=limit
         )
+    
+    @staticmethod
+    async def create_order_from_cart(
+        db: AsyncSession,
+        user_id: int
+    ):
+        cart_items = await cart_crud.get_user_cart(db, user_id)
+
+        if not cart_items:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Ваша корзина пуста. Нечего оформлять!"
+            )
+        
+        total_price = 0
+        order_items_to_create = []
+
+        try:
+            for cart_item in cart_items:
+                product = cart_item.product
+
+                if product.stock < cart_item.quantity:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Недостаточно товара {product.name} на складе(доступно: {product.stock})"
+                    )
+                
+                total_price += product.price * cart_item.quantity
+
+                product.stock -= cart_item.quantity
+
+                order_items_to_create.append(OrderItem(
+                    product_id=product.id,
+                    quantity=cart_item.quantity,
+                    price_at_purchase=product.price
+                ))
+
+            new_order = await order_crud._create_order_record(
+                db,
+                user_id,
+                total_price,
+                order_items_to_create
+            )
+
+            await cart_crud.delete_all_cart_items_by_user_id(db, user_id)
+
+            await db.commit()
+            await db.refresh(new_order, attribute_names=["items"])
+
+            return new_order
+        
+        except Exception as e:
+            await db.rollback()
+            raise e
     
 order_service = OrderService()

@@ -1,16 +1,20 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status
 from typing import Optional, List
+from sqlalchemy import select
+from fastapi import BackgroundTasks
 
 from backend.crud.order import order_crud
 from backend.crud.product import product_crud
 from backend.schemas.order import OrderCreate, OrderUpdate
 from backend.models.order_item import OrderItem
 from backend.models.user import User
+from backend.models.product import Product
 from backend.core.utils.order_status_enums import OrderStatus
 
 from backend.crud.cart import cart_crud
 from backend.models.order import Order
+from backend.services.email_service import email_service
 
 class OrderService:
 
@@ -24,7 +28,7 @@ class OrderService:
         order_items = []
         try: 
             for item in order_data.items:
-                product = await product_crud.get_product_by_id(db, item.product_id)
+                product = await product_crud.get_product_by_id(db, item.product_id, for_update=True)
 
                 if not product:
                     raise HTTPException(
@@ -176,7 +180,9 @@ class OrderService:
     @staticmethod
     async def create_order_from_cart(
         db: AsyncSession,
-        user_id: int
+        user_id: int,
+        email: str,
+        background_tasks: BackgroundTasks
     ):
         cart_items = await cart_crud.get_user_cart(db, user_id)
 
@@ -186,21 +192,30 @@ class OrderService:
                 detail="Ваша корзина пуста. Нечего оформлять!"
             )
         
+        products_ids = [ci.product_id for ci in cart_items]
+
+        prodcut_query = await db.execute(
+            select(Product)
+            .where(Product.id.in_(products_ids))
+            .with_for_update()
+        )
+
+        products_map = {p.id: p for p in prodcut_query.scalars().all()}
+        
         total_price = 0
         order_items_to_create = []
 
         try:
             for cart_item in cart_items:
-                product = cart_item.product
+                product = products_map.get(cart_item.product_id)
 
-                if product.stock < cart_item.quantity:
+                if not product or product.stock < cart_item.quantity:
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Недостаточно товара {product.name} на складе(доступно: {product.stock})"
+                        detail=f"Недостаточно товара {product.name if product else f'ID({str(cart_item.product_id)})'}"
                     )
                 
                 total_price += product.price * cart_item.quantity
-
                 product.stock -= cart_item.quantity
 
                 order_items_to_create.append(OrderItem(
@@ -209,17 +224,18 @@ class OrderService:
                     price_at_purchase=product.price
                 ))
 
-            new_order = await order_crud._create_order_record(
-                db,
-                user_id,
-                total_price,
-                order_items_to_create
-            )
-
+            new_order = await order_crud._create_order_record(db, user_id, total_price, order_items_to_create)
             await cart_crud.delete_all_cart_items_by_user_id(db, user_id)
 
             await db.commit()
             await db.refresh(new_order, attribute_names=["items"])
+
+            background_tasks.add_task(
+                email_service.send_order_confirmation,
+                email_to=email,
+                order_id=new_order.id,
+                total_price=float(total_price)
+            )
 
             return new_order
         

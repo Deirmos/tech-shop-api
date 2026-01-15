@@ -10,7 +10,9 @@ from backend.core.database import get_db
 
 router = APIRouter(prefix="/category", tags=["categories"])
 
-@router.post("/", response_model=CategoryResponse)
+admin_router = APIRouter(prefix="/admin/category", tags=["admin-categories"])
+
+@admin_router.post("/", response_model=CategoryResponse)
 async def create_new_category(
     category_data: CategoryCreate,
     user: User = Depends(get_current_admin_user),
@@ -46,7 +48,7 @@ async def get_category(
 
     return category
 
-@router.put("/{category_id}", response_model=CategoryResponse)
+@admin_router.put("/{category_id}", response_model=CategoryResponse)
 async def edit_category(
     category_id: int,
     updated_data: CategoryUpdate,
@@ -58,7 +60,7 @@ async def edit_category(
 
     return category
 
-@router.delete("/{category_id}")
+@admin_router.delete("/{category_id}")
 async def delete_category(
     category_id: int,
     user: User = Depends(get_current_admin_user),

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional, List
 from fastapi import UploadFile, File
@@ -91,25 +91,25 @@ async def upload_product_image(
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(get_current_admin_user)
 ):
-    
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Можно загружать только изображения"
+        )
+
     BASE_DIR = Path(__file__).resolve().parent.parent
-
     upload_dir = BASE_DIR / "static" / "products"
-
     upload_dir.mkdir(parents=True, exist_ok=True)
     
-    file_extension = file.filename.split(".")[-1]
-    file_name = f"{uuid.uuid4()}.{file_extension}"
-
+    file_name = f"{uuid.uuid4()}.{file.filename.split('.')[-1]}"
     full_save_path = upload_dir / file_name
+    db_path = f"static/products/{file_name}"
 
-    db_path = f"static/products{file_name}"
-
+    content = await file.read() 
     with open(full_save_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+        buffer.write(content)
 
     product = await product_service.update_product_image(db, product_id, db_path)
-
     return product
 
 @router.get("/name/{product_name}", response_model=List[ProductResponse])

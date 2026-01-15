@@ -3,20 +3,17 @@ venv/
 .venv/
 env/
 
-# Python кэш
+
 __pycache__/
 *.pyc
 
 .ini
+alembic.ini
 
-# Конфиденциальные данные
+
 .env
 
-# База данных (если используешь SQLite локально)
-*.sqlite3
-*.db
-
-# Статика (фотки товаров не стоит заливать в репозиторий кода)
 static/products/*
 ts/*
 migrations/*
+migrations/

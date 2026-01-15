@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional, List
 
@@ -88,9 +88,15 @@ async def get_all_orders_admin(
 
 @router.post("/checkout", response_model=OrderResponse)
 async def checkout_cart(
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     
-    return await order_service.create_order_from_cart(db, current_user.id)
+    return await order_service.create_order_from_cart(
+        db,
+        user_id=current_user.id,
+        email=current_user.email,
+        background_tasks=background_tasks
+    )
 

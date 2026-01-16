@@ -2,15 +2,20 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional, List
 from fastapi import UploadFile, File
-import shutil
 import uuid
 from pathlib import Path
+from PIL import Image
+import io
+import aiofiles
 
 from backend.schemas.product import ProductResponse, ProductCreate, ProductEdit
 from backend.models.user import User
 from backend.services.user_service import user_service, get_current_admin_user
 from backend.services.product_service import product_service
 from backend.core.database import get_db
+
+MAX_FILE_SIZE = 5 * 1024 * 1024
+ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png"}
 
 router = APIRouter(prefix="/product", tags=["products"])
 
@@ -91,25 +96,48 @@ async def upload_product_image(
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(get_current_admin_user)
 ):
-    if not file.content_type.startswith("image/"):
+    file_extension = file.filename.split(".")[-1].lower()
+    
+    if file_extension not in ALLOWED_EXTENSIONS:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Можно загружать только изображения"
+            detail=f"Недопустимое расширение файла. Разрешены: {ALLOWED_EXTENSIONS}"
         )
+    
+    content = await file.read()
 
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Файл слишком большой. Максимальный размер - 5МБ"
+        )
+    
+    try:
+        image = Image.open(io.BytesIO(content))
+        image.verify()
+
+        if image.format.lower() not in ["jpeg", "png"]:
+            raise Exception("Неверный внутренний формат изображения")
+        
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Файл поврежден или не является валидным изображением"
+        )
+    
     BASE_DIR = Path(__file__).resolve().parent.parent
     upload_dir = BASE_DIR / "static" / "products"
     upload_dir.mkdir(parents=True, exist_ok=True)
-    
-    file_name = f"{uuid.uuid4()}.{file.filename.split('.')[-1]}"
+
+    file_name = f"{uuid.uuid4()}.{file_extension}"
     full_save_path = upload_dir / file_name
     db_path = f"static/products/{file_name}"
 
-    content = await file.read() 
-    with open(full_save_path, "wb") as buffer:
-        buffer.write(content)
+    async with aiofiles.open(full_save_path, mode="wb") as buffer:
+        await buffer.write(content)
 
     product = await product_service.update_product_image(db, product_id, db_path)
+
     return product
 
 @router.get("/name/{product_name}", response_model=List[ProductResponse])

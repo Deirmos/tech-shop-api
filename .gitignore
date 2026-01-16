@@ -14,9 +14,19 @@ alembic.ini
 .env
 
 static/products/*
+static/
+static/*
+static/products
+
 ts/*
+
 migrations/*
 migrations/
+migrations/versions
+migrations/versions*
+migrations/env.py
+migrations/README
+migrations/script.py.mako
 
 templates/email*
 templates/

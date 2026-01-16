@@ -1,46 +1,44 @@
-from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
+import aiosmtplib
+import os
+from email.message import EmailMessage
+from jinja2 import Environment, FileSystemLoader
 from pathlib import Path
 
 from backend.core.config import settings
 
-conf = ConnectionConfig(
-    MAIL_USERNAME=settings.MAIL_USERNAME,
-    MAIL_PASSWORD=settings.MAIL_PASSWORD,
-    MAIL_FROM=settings.MAIL_FROM,
-    MAIL_PORT=settings.MAIL_PORT,
-    MAIL_SERVER=settings.MAIL_SERVER,
-    MAIL_STARTTLS=settings.MAIL_STARTTLS,
-    MAIL_SSL_TLS=settings.MAIL_SSL_TLS,
-    USE_CREDENTIALS=True
-)
+BASE_DIR = Path(__file__).resolve().parent.parent
+TEMPLATE_FOLDER = BASE_DIR / "templates" / "email"
+env = Environment(loader=FileSystemLoader(TEMPLATE_FOLDER))
+
+
 
 class EmailService:
 
     @staticmethod
     async def send_order_confirmation(
         email_to: str,
-        order_id: int,
-        total_price: float
+        template_data: dict
     ):
-        html = f"""
-        <html>
-            <body>
-                <h1>Заказ №{order_id} успешно оформлен!</h1>
-                <p>Спасибо за покупку в нашем магазине.</p>
-                <p><b>Сумма заказа:</b> {total_price} руб.</p>
-                <p>Мы свяжемся с вами в ближайшее время для уточнения деталей доставки.</p>
-            </body>
-        </html>   
-        """
+        
+        template = env.get_template("order_confirmation.html")
+        html_content = template.render(**template_data)
 
-        message = MessageSchema(
-            subject="Подтверждение заказа - TechShop",
-            recipients=[email_to],
-            body=html,
-            subtype=MessageType.html
+        message = EmailMessage()
+        message["From"] = settings.MAIL_FROM
+        message["To"] = email_to
+        message["Subject"] = f"Заказ №{template_data['order_id']} - TechShop"
+
+        message.add_alternative(html_content, subtype="html")
+
+
+        await aiosmtplib.send(
+            message,
+            hostname=settings.MAIL_SERVER,
+            port=settings.MAIL_PORT,
+            username=settings.MAIL_USERNAME,
+            password=settings.MAIL_PASSWORD,
+            use_tls=(settings.MAIL_PORT == 465),
+            start_tls=(settings.MAIL_PORT == 587 or settings.MAIL_PORT == 2525)
         )
-
-        fm = FastMail(conf)
-        await fm.send_message(message)
 
 email_service = EmailService()

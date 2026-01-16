@@ -230,11 +230,26 @@ class OrderService:
             await db.commit()
             await db.refresh(new_order, attribute_names=["items"])
 
+            email_items = []
+
+            for item in order_items_to_create:
+                p = products_map.get(item.product_id)
+                email_items.append({
+                    "product_name": p.name if p else "Товар",
+                    "quantity": item.quantity,
+                    "price": float(item.price_at_purchase)
+                })
+
+            email_data = {
+                "order_id": new_order.id,
+                "total_price": float(total_price),
+                "items": email_items
+            }
+
             background_tasks.add_task(
                 email_service.send_order_confirmation,
                 email_to=email,
-                order_id=new_order.id,
-                total_price=float(total_price)
+                template_data=email_data
             )
 
             return new_order

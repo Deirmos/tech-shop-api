@@ -122,7 +122,7 @@ async def search_products(
 
     return products
 
-@router.put("/{product_id}", response_model=ProductResponse)
+@admin_router.put("/{product_id}", response_model=ProductResponse)
 async def edit_product_by_id(
     product_id: int,
     updated_data: ProductEdit,
@@ -145,7 +145,7 @@ async def create_product(
 
     return product
 
-@router.delete("/{product_id}")
+@admin_router.delete("/{product_id}")
 async def delete_product(
     product_id: int,
     user: User = Depends(get_current_admin_user),

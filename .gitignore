@@ -17,3 +17,7 @@ static/products/*
 ts/*
 migrations/*
 migrations/
+
+templates/email*
+templates/
+templates/*

@@ -1,6 +1,8 @@
+# In Russian
+
 # 🛒 E-Commerce API Service
 
-Современный асинхронный бэкенд для электронного магазина техники. Проект реализует полный цикл работы магазина: от управления каталогом и корзиной до транзакционного оформления заказов с уведомлением по Email.
+[RU] Современный асинхронный бэкенд для электронного магазина техники. Проект реализует полный цикл работы магазина: от управления каталогом и корзиной до транзакционного оформления заказов с уведомлением по Email.
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python)](https://www.python.org/)
@@ -92,3 +94,107 @@ uvicorn main:app --reload
 [ ] Интеграция Redis для кэширования популярных запросов.
 
 [ ] Настройка CI/CD (GitHub Actions) для автоматического запуска тестов.
+
+
+# In English
+
+
+# 🛒 E-Commerce API Service
+
+[EN] Modern asynchronous backend for a tech e-commerce store. The project implements a full store lifecycle: from catalog management to transactional order processing.
+
+[![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python)](https://www.python.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql)](https://www.postgresql.org/)
+[![Pytest](https://img.shields.io/badge/Pytest-91%25_Coverage-green?style=for-the-badge&logo=pytest)](https://docs.pytest.org/)
+
+---
+
+## 🌟 Key Features 
+
+* **Async First**: Fully asynchronous architecture (FastAPI, SQLAlchemy 2.0, aiosmtplib)
+* **Order Logic**: Transactional ordering with stock validation and automatic restock on cancellation
+* **Security**: JWT-based auth, password hashing (bcrypt), and Role-Based Access Control (User/Admin)
+* **Soft Delete**: Mechanism for products and categories to maintain order history integrity
+* **Email Engine**: Background HTML email notifications via Jinja2 templates
+
+---
+
+## 🏗 Architecture / Архитектура
+**Service Layer pattern** — keeps code testable and decoupled
+* `routers/` — Transport layer (HTTP endpoints)
+* `services/` — Core business logic
+* `models/` — Database entities (SQLAlchemy)
+* `schemas/` — Data validation (Pydantic)
+
+---
+
+## 🧪 Testing / Тестирование
+* **Coverage:** `91%`
+* **Stack:** `pytest`, `pytest-asyncio`, `httpx`.
+* **Scenarios:** Integration API tests, service mocks, transaction integrity checks
+
+```bash
+pytest -v
+
+## 🛠 Tech Stack
+
+Framework: FastAPI
+
+Database: PostgreSQL + SQLAlchemy (Async)
+
+Migrations: Alembic
+
+Templates: Jinja2
+
+Validation: Pydantic v2
+
+## 📖 API Documentation
+
+Accessible after server start:
+
+Swagger UI: http://127.0.0.1:8000/docs
+
+ReDoc: http://127.0.0.1:8000/redoc
+
+Modules:
+User Service: Auth, registration, profiles.
+
+Product Service: Catalog, search (min 2 symbols), filtering.
+
+Cart Service: Shopping cart management.
+
+Order Service: Order placement, status management, background tasks.
+
+## 🚦 Quick Start
+
+Clone:
+
+Bash
+
+git clone [https://github.com/Deirmos/tech-shop-api.git](https://github.com/Deirmos/tech-shop-api.git)
+
+cd tech-shop-api
+
+Environment: Create .env from .env.example
+
+Install:
+
+Bash
+
+pip install -r requirements.txt
+
+Run:
+
+Bash
+
+uvicorn main:app --reload
+
+
+## 🗺 Roadmap
+
+[ ] Docker & Docker Compose support.
+
+[ ] Redis integration for caching.
+
+[ ] CI/CD pipeline (GitHub Actions).

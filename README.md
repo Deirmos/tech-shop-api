@@ -136,6 +136,8 @@ uvicorn main:app --reload
 
 Start:
 
+--Bash--
+
 pytest -v
 
 ## 🛠 Tech Stack
@@ -171,7 +173,7 @@ Order Service: Order placement, status management, background tasks.
 
 Clone:
 
-Bash
+--Bash--
 
 git clone [https://github.com/Deirmos/tech-shop-api.git](https://github.com/Deirmos/tech-shop-api.git)
 
@@ -181,13 +183,13 @@ Environment: Create .env from .env.example
 
 Install:
 
-Bash
+--Bash--
 
 pip install -r requirements.txt
 
 Run:
 
-Bash
+--Bash--
 
 uvicorn main:app --reload
 

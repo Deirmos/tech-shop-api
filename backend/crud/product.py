@@ -43,13 +43,17 @@ class ProductCRUD:
     async def get_product_by_id(
         db: AsyncSession,
         product_id: int,
-        show_deleted: bool = False
+        show_deleted: bool = False,
+        for_update: bool = False
     ) -> Product | None:
         
         query = select(Product).where(Product.id == product_id)
 
         if not show_deleted:
             query = query.where(Product.is_delete == False)
+
+        if for_update:
+            query = query.with_for_update()
 
         result = await db.execute(query)
 

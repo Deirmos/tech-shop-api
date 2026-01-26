@@ -3,7 +3,7 @@ from typing import Optional
 
 class CategoryBase(BaseModel):
     name: str = Field(..., min_length=3, max_length=150)
-    slug: str
+    slug: str | None = None
     description: str | None = None
 
 class CategoryCreate(CategoryBase):

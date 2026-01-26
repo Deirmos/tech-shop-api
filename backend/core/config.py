@@ -1,6 +1,7 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
+    DEBUG: bool = False
     DATABASE_URL: str
     TEST_DATABASE_URL: str
     SECRET_KEY: str

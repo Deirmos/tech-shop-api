@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, ConfigDict, Field
+from pydantic import BaseModel, EmailStr, ConfigDict, Field, AliasChoices
 from datetime import datetime
 
 class UserBase(BaseModel):
@@ -15,7 +15,7 @@ class UserRegister(UserBase):
     password: str = Field(..., min_length=6, max_length=100)
 
 class UserLogin(BaseModel):
-    email: EmailStr
+    email: str = Field(..., validation_alias=AliasChoices('email', 'username'))
     password: str
 
 class Token(BaseModel):

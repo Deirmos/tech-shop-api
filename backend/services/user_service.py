@@ -95,7 +95,15 @@ class UserService:
         db: AsyncSession
     ):
         
-        user = await user_crud.get_user_by_email(db, user_data.username)
+        login_id = getattr(user_data, "email", None) or getattr(user_data, "username", None)
+
+        if not login_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Учетные данные не найдены"
+            )
+        
+        user = await user_crud.get_user_by_email(db, login_id)
 
         if not user or not verify_password(user_data.password, user.hashed_password):
             raise HTTPException(

@@ -31,3 +31,14 @@ migrations/script.py.mako
 templates/email*
 templates/
 templates/*
+
+pytest.ini
+.ini*
+.coverage
+
+.VSCodeCounter/*
+
+techshop-frontend/*
+techshop-frontend/
+
+.env.local

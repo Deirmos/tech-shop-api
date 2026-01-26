@@ -120,7 +120,7 @@ uvicorn main:app --reload
 
 ---
 
-## 🏗 Architecture / Архитектура
+## 🏗 Architecture
 **Service Layer pattern** — keeps code testable and decoupled
 * `routers/` — Transport layer (HTTP endpoints)
 * `services/` — Core business logic
@@ -129,12 +129,13 @@ uvicorn main:app --reload
 
 ---
 
-## 🧪 Testing / Тестирование
+## 🧪 Testing
 * **Coverage:** `91%`
 * **Stack:** `pytest`, `pytest-asyncio`, `httpx`.
 * **Scenarios:** Integration API tests, service mocks, transaction integrity checks
 
-```bash
+Start:
+
 pytest -v
 
 ## 🛠 Tech Stack

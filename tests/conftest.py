@@ -5,6 +5,10 @@ from httpx import AsyncClient
 from unittest.mock import AsyncMock
 from sqlalchemy import text
 
+# Ensure required settings exist for tests before importing app/config.
+os.environ.setdefault("RABBITMQ_URL", "amqp://guest:guest@localhost/")
+os.environ.setdefault("RABBITMQ_EMAIL_QUEUE", "email.order_confirmation")
+
 from backend.services.email_service import email_service
 from backend.core.config import settings
 from backend.core.database import get_db, Base

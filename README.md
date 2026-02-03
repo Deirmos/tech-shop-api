@@ -86,7 +86,7 @@ pip install -r requirements.txt
 
 --Bash--
 
-uvicorn main:app --reload
+uvicorn backend:app --reload
 
 ## 🗺 Roadmap (В разработке)
 [ ] Контейнеризация приложения (Docker & Docker Compose).
@@ -196,8 +196,8 @@ uvicorn main:app --reload
 
 ## 🗺 Roadmap
 
-[ ] Docker & Docker Compose support.
+[✔] Docker & Docker Compose support.
 
-[ ] Redis integration for caching.
+[\(\times \)] Redis integration for caching.
 
-[ ] CI/CD pipeline (GitHub Actions).
+[\(\times \)] CI/CD pipeline (GitHub Actions).

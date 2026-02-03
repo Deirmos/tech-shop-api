@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { width: 80%; margin: 20px auto; border: 1px solid #eee; padding: 20px; border-radius: 10px; }
+        .header { background: #4CAF50; color: white; padding: 10px; text-align: center; border-radius: 5px 5px 0 0; }
+        .order-info { margin: 20px 0; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px; border-bottom: 1px solid #ddd; text-align: left; }
+        .total { font-weight: bold; font-size: 1.2em; color: #4CAF50; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Заказ №{{ order_id }} успешно оформлен!</h2>
+        </div>
+        <div class="order-info">
+            <p>Здравствуйте!</p>
+            <p>Ваш заказ был успешно принят в обработку. Ниже представлены детали заказа:</p>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Товар</th>
+                        <th>Кол-во</th>
+                        <th>Цена</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td>{{ item.product_name }}</td>
+                        <td>{{ item.quantity }}</td>
+                        <td>{{ item.price }} руб.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            <p class="total">Итого: {{ total_price }} руб.</p>
+        </div>
+        <p>Спасибо за выбор нашего магазина!</p>
+    </div>
+</body>
+</html>

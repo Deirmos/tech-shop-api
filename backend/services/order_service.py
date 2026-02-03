@@ -3,6 +3,7 @@ from fastapi import HTTPException, status
 from typing import Optional, List
 from sqlalchemy import select
 from fastapi import BackgroundTasks
+import logging
 
 from backend.crud.order import order_crud
 from backend.crud.product import product_crud
@@ -15,6 +16,10 @@ from backend.core.utils.order_status_enums import OrderStatus
 from backend.crud.cart import cart_crud
 from backend.models.order import Order
 from backend.services.email_service import email_service
+
+from backend.core.rabbitmq import publisher_email_event
+
+logger = logging.getLogger(__name__)
 
 class OrderService:
 
@@ -245,12 +250,18 @@ class OrderService:
                 "total_price": float(total_price),
                 "items": email_items
             }
+            email_payload = {
+                "email_to": email,
+                "template_data": email_data
+            }
 
-            background_tasks.add_task(
-                email_service.send_order_confirmation,
-                email_to=email,
-                template_data=email_data
-            )
+            if background_tasks is not None:
+                background_tasks.add_task(publisher_email_event, email_payload)
+            else:
+                try:
+                    await publisher_email_event(email_payload)
+                except Exception:
+                    logger.warning("Failed to publish email event.", exc_info=True)
 
             return new_order
         

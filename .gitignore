@@ -1,4 +1,3 @@
-# Виртуальное окружение
 venv/
 .venv/
 env/
@@ -20,18 +19,6 @@ static/products
 
 ts/*
 
-migrations/*
-migrations/
-migrations/versions
-migrations/versions*
-migrations/env.py
-migrations/README
-migrations/script.py.mako
-
-templates/email*
-templates/
-templates/*
-
 pytest.ini
 .ini*
 .coverage
@@ -42,3 +29,4 @@ techshop-frontend/*
 techshop-frontend/
 
 .env.local
+.env.docker

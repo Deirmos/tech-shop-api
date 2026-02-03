@@ -1,203 +1,217 @@
-# In Russian
+﻿# In Russian
 
-# 🛒 E-Commerce API Service
+# 🛒 TechShop E-Commerce API
 
-[RU] Современный асинхронный бэкенд для электронного магазина техники. Проект реализует полный цикл работы магазина: от управления каталогом и корзиной до транзакционного оформления заказов с уведомлением по Email.
-
-[![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
-[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python)](https://www.python.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql)](https://www.postgresql.org/)
-[![Pytest](https://img.shields.io/badge/Pytest-91%25_Coverage-green?style=for-the-badge&logo=pytest)](https://docs.pytest.org/)
+[RU] Асинхронный бэкенд интернет-магазина техники. Проект реализует полный цикл работы магазина: каталог, корзина, заказы, оплата, уведомления по email.
 
 ## 🌟 Ключевые особенности
 
-* **Async First**: Полностью асинхронная архитектура (FastAPI, SQLAlchemy 2.0 Async, aiosmtplib).
-* **Order Logic**: Сложная логика заказов с проверкой остатков на складе (`stock`) и их автоматическим возвратом при отмене заказа.
-* **Security**: Авторизация через JWT-токены, хэширование паролей (bcrypt) и четкое разделение прав (User/Admin).
-* **Soft Delete**: Механизм «мягкого удаления» для продуктов и категорий, позволяющий сохранять целостность истории заказов.
-* **Email Engine**: Фоновая отправка красивых HTML-писем через Jinja2 шаблоны без блокировки API.
+- **Async First**: FastAPI + SQLAlchemy 2.0 Async + aiosmtplib.
+- **Order Logic**: валидация остатков, транзакционное создание заказа, возврат остатков при отмене.
+- **Security**: JWT-аутентификация, хеширование паролей (bcrypt), роли User/Admin.
+- **Soft Delete**: мягкое удаление категорий и товаров.
+- **Email Engine**: HTML-письма через Jinja2.
+- **RabbitMQ**: асинхронная отправка email через очередь, retry и DLQ.
 
 ## 🏗 Архитектура
-Проект придерживается многослойной архитектуры (**Service Layer**), что делает код тестируемым и независимым от способа вызова (API, CLI и т.д.):
-* `routers/` — транспортный уровень (HTTP эндпоинты).
-* `services/` — ядро системы (вся бизнес-логика).
-* `models/` — описание сущностей БД (SQLAlchemy).
-* `schemas/` — валидация входных и выходных данных (Pydantic).
 
----
+Слойная архитектура (Service Layer):
+- `routers/` — HTTP эндпоинты.
+- `services/` — бизнес-логика.
+- `models/` — модели БД (SQLAlchemy).
+- `schemas/` — валидация данных (Pydantic).
+- `worker/` — консюмер RabbitMQ для отправки email.
 
-## 🧪 Тестирование и надежность
-Особое внимание уделено качеству кода. Проект имеет высокую степень покрытия тестами, что гарантирует стабильность критических узлов (оплата, корзина, сток).
+## 🧪 Тестирование
 
-* **Покрытие:** `91%`
-* **Инструментарий:** `pytest`, `pytest-asyncio`, `httpx`.
-* **Сценарии:** Интеграционное тестирование API, мокирование внешних сервисов (Email), проверка транзакционности при создании заказа.
+Тесты используют `pytest` и мокают отправку email.
 
-Запуск тестов:
---bash--
+Запуск:
 
+```bash
+pip install -r requirements.txt
+pip install -r requirements-dev.txt
 pytest -v
+```
 
-## 🛠 Технологический стек
-Framework: FastAPI
+Важно: для тестов требуется `RABBITMQ_URL` в окружении (можно фиктивный), иначе `Settings()` не инициализируется.
 
-Database: PostgreSQL + SQLAlchemy (Async)
+## 🧰 Технологический стек
 
-Migrations: Alembic
+- FastAPI
+- PostgreSQL + SQLAlchemy (Async)
+- Alembic
+- RabbitMQ (aio-pika)
+- Jinja2
+- Pydantic v2
 
-Templates: Jinja2
-
-Validation: Pydantic v2
-
-## 📖 API Documentation
-Документация доступна в интерактивном формате после запуска сервера:
+## 📖 API Документация
 
 Swagger UI: http://127.0.0.1:8000/docs
-
 ReDoc: http://127.0.0.1:8000/redoc
 
-Основные модули:
-User Service: Регистрация, аутентификация, профили.
+## 🚀 Быстрый старт (локально)
 
-Product Service: Каталог, поиск (min 2 символа), фильтрация по цене и категориям.
-
-Cart Service: Управление временной корзиной.
-
-Order Service: Оформление заказов, управление статусами, BackgroundTasks для уведомлений.
-
-## 🚦 Быстрый старт
-Клонирование:
-
---Bash--
-
-git clone [https://github.com/Deirmos/tech-shop-api.git](https://github.com/Deirmos/tech-shop-api.git)
-
-cd tech-shop-api
-
-Настройка окружения: Создайте .env на основе примера (файл .env.example в директории) и заполните данные для БД и SMTP.
-
-Установка зависимостей:
-
---Bash--
-
+```bash
 pip install -r requirements.txt
+uvicorn backend.main:app --reload
+```
 
-Запуск приложения:
+## 🐳 Docker
 
---Bash--
+### 1. Подготовьте `.env.docker`
 
-uvicorn backend:app --reload
+Пример:
 
-## 🗺 Roadmap (В разработке)
-[ ] Контейнеризация приложения (Docker & Docker Compose).
+```env
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/ecommerce_db
+TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/test_db
+SECRET_KEY=change_me
 
-[ ] Интеграция Redis для кэширования популярных запросов.
+MAIL_USERNAME=your_mailtrap_username
+MAIL_PASSWORD=your_mailtrap_password
+MAIL_FROM=info@tech-shop.com
+MAIL_PORT=2525
+MAIL_SERVER=sandbox.smtp.mailtrap.io
+MAIL_STARTTLS=True
+MAIL_SSL_TLS=False
 
-[ ] Настройка CI/CD (GitHub Actions) для автоматического запуска тестов.
+RABBITMQ_URL=amqp://rabbit:rabbit@rabbitmq:5672/
+RABBITMQ_EMAIL_QUEUE=email.order_confirmation
+RABBITMQ_EMAIL_EXCHANGE=email.exchange
+RABBITMQ_RETRY_EXCHANGE=email.retry.exchange
+RABBITMQ_DLQ_EXCHANGE=email.dlq.exchange
+RABBITMQ_RETRY_QUEUE=email.order_confirmation.retry
+RABBITMQ_DLQ_QUEUE=email.order_confirmation.dlq
+RABBITMQ_RETRY_DELAY_SECONDS=30
+RABBITMQ_MAX_RETRIES=5
 
+DEBUG=True
+```
+
+### 2. Запуск
+
+```bash
+docker compose up --build
+```
+
+Будут подняты сервисы:
+- `app` — API
+- `db` — PostgreSQL
+- `rabbitmq` — брокер + UI
+- `worker` — консюмер RabbitMQ
+
+RabbitMQ UI: http://localhost:15672 (логин/пароль: `rabbit` / `rabbit`).
+
+## 🛣 Roadmap
+
+- [x] Docker & Docker Compose
+- [ ] Redis для кеширования
+- [ ] CI/CD (GitHub Actions)
+
+---
 
 # In English
 
+# 🛒 TechShop E-Commerce API
 
-# 🛒 E-Commerce API Service
+[EN] Modern asynchronous backend for a tech e-commerce store. It covers the full lifecycle: catalog, cart, orders, and email notifications.
 
-[EN] Modern asynchronous backend for a tech e-commerce store. The project implements a full store lifecycle: from catalog management to transactional order processing.
+## 🌟 Key Features
 
-[![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
-[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python)](https://www.python.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql)](https://www.postgresql.org/)
-[![Pytest](https://img.shields.io/badge/Pytest-91%25_Coverage-green?style=for-the-badge&logo=pytest)](https://docs.pytest.org/)
-
----
-
-## 🌟 Key Features 
-
-* **Async First**: Fully asynchronous architecture (FastAPI, SQLAlchemy 2.0, aiosmtplib)
-* **Order Logic**: Transactional ordering with stock validation and automatic restock on cancellation
-* **Security**: JWT-based auth, password hashing (bcrypt), and Role-Based Access Control (User/Admin)
-* **Soft Delete**: Mechanism for products and categories to maintain order history integrity
-* **Email Engine**: Background HTML email notifications via Jinja2 templates
-
----
+- **Async First**: FastAPI + SQLAlchemy 2.0 Async + aiosmtplib.
+- **Order Logic**: transactional order creation with stock validation and restock on cancel.
+- **Security**: JWT auth, bcrypt password hashing, User/Admin roles.
+- **Soft Delete**: products/categories keep history intact.
+- **Email Engine**: Jinja2 HTML templates.
+- **RabbitMQ**: async email delivery with retry and DLQ.
 
 ## 🏗 Architecture
-**Service Layer pattern** — keeps code testable and decoupled
-* `routers/` — Transport layer (HTTP endpoints)
-* `services/` — Core business logic
-* `models/` — Database entities (SQLAlchemy)
-* `schemas/` — Data validation (Pydantic)
 
----
+Service Layer pattern:
+- `routers/` — HTTP endpoints.
+- `services/` — business logic.
+- `models/` — DB models (SQLAlchemy).
+- `schemas/` — validation (Pydantic).
+- `worker/` — RabbitMQ consumer for email.
 
 ## 🧪 Testing
-* **Coverage:** `91%`
-* **Stack:** `pytest`, `pytest-asyncio`, `httpx`.
-* **Scenarios:** Integration API tests, service mocks, transaction integrity checks
 
-Start:
-
---Bash--
-
+```bash
+pip install -r requirements.txt
+pip install -r requirements-dev.txt
 pytest -v
+```
 
-## 🛠 Tech Stack
+Note: tests expect `RABBITMQ_URL` in env (can be dummy) to initialize settings.
 
-Framework: FastAPI
+## 🧰 Tech Stack
 
-Database: PostgreSQL + SQLAlchemy (Async)
+- FastAPI
+- PostgreSQL + SQLAlchemy (Async)
+- Alembic
+- RabbitMQ (aio-pika)
+- Jinja2
+- Pydantic v2
 
-Migrations: Alembic
-
-Templates: Jinja2
-
-Validation: Pydantic v2
-
-## 📖 API Documentation
-
-Accessible after server start:
+## 📖 API Docs
 
 Swagger UI: http://127.0.0.1:8000/docs
-
 ReDoc: http://127.0.0.1:8000/redoc
 
-Modules:
-User Service: Auth, registration, profiles.
+## 🚀 Quick Start (local)
 
-Product Service: Catalog, search (min 2 symbols), filtering.
-
-Cart Service: Shopping cart management.
-
-Order Service: Order placement, status management, background tasks.
-
-## 🚦 Quick Start
-
-Clone:
-
---Bash--
-
-git clone [https://github.com/Deirmos/tech-shop-api.git](https://github.com/Deirmos/tech-shop-api.git)
-
-cd tech-shop-api
-
-Environment: Create .env from .env.example
-
-Install:
-
---Bash--
-
+```bash
 pip install -r requirements.txt
+uvicorn backend.main:app --reload
+```
 
-Run:
+## 🐳 Docker
 
---Bash--
+### 1. Create `.env.docker`
 
-uvicorn main:app --reload
+```env
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/ecommerce_db
+TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/test_db
+SECRET_KEY=change_me
 
+MAIL_USERNAME=your_mailtrap_username
+MAIL_PASSWORD=your_mailtrap_password
+MAIL_FROM=info@tech-shop.com
+MAIL_PORT=2525
+MAIL_SERVER=sandbox.smtp.mailtrap.io
+MAIL_STARTTLS=True
+MAIL_SSL_TLS=False
 
-## 🗺 Roadmap
+RABBITMQ_URL=amqp://rabbit:rabbit@rabbitmq:5672/
+RABBITMQ_EMAIL_QUEUE=email.order_confirmation
+RABBITMQ_EMAIL_EXCHANGE=email.exchange
+RABBITMQ_RETRY_EXCHANGE=email.retry.exchange
+RABBITMQ_DLQ_EXCHANGE=email.dlq.exchange
+RABBITMQ_RETRY_QUEUE=email.order_confirmation.retry
+RABBITMQ_DLQ_QUEUE=email.order_confirmation.dlq
+RABBITMQ_RETRY_DELAY_SECONDS=30
+RABBITMQ_MAX_RETRIES=5
 
-[✔] Docker & Docker Compose support.
+DEBUG=True
+```
 
-[\(\times \)] Redis integration for caching.
+### 2. Run
 
-[\(\times \)] CI/CD pipeline (GitHub Actions).
+```bash
+docker compose up --build
+```
+
+Services:
+- `app` — API
+- `db` — PostgreSQL
+- `rabbitmq` — broker + UI
+- `worker` — RabbitMQ consumer
+
+RabbitMQ UI: http://localhost:15672 (user/pass: `rabbit` / `rabbit`).
+
+## 🛣 Roadmap
+
+- [x] Docker & Docker Compose
+- [ ] Redis caching
+- [ ] CI/CD (GitHub Actions)

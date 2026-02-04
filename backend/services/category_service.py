@@ -80,7 +80,7 @@ class CategoryService:
         
         category = await category_crud.get_category_by_id(db, category_id)
 
-        if category is None:
+        if category is None or category.is_delete == True:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Категории с ID({category_id}) не найдено"

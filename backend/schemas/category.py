@@ -11,9 +11,11 @@ class CategoryCreate(CategoryBase):
 
 class CategoryResponse(CategoryBase):
     id: int
+    is_delete: bool
 
     model_config = ConfigDict(from_attributes=True)
 
 class CategoryUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=3, max_length=150)
     slug: Optional[str] = None
+    description: Optional[str] = None

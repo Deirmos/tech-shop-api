@@ -77,7 +77,8 @@ class CategoryCRUD:
         if not category:
             return False
         
-        await db.delete(category)
+        category.is_delete = True
+
         await db.flush()
 
         return True

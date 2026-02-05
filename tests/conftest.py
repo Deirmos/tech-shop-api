@@ -1,5 +1,6 @@
 import os
 import pytest
+import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from httpx import AsyncClient
 from unittest.mock import AsyncMock
@@ -17,6 +18,7 @@ from backend.main import app
 from backend.schemas.user import UserRegister
 
 from backend.models.product import Product
+from backend.models.category import Category
 
 from backend.models.cart import CartItem
 
@@ -167,8 +169,14 @@ def category_factory(db_session):
         if slug is None:
             slug = name.lower().replace(" ", "-")
 
-        from backend.models.category import Category
+        result = await db_session.execute(
+            sa.select(Category).where(Category.name == name)
+        )
+        category = result.scalar_one_or_none()
 
+        if category:
+            return category
+        
         category = Category(name=name, slug=slug)
         db_session.add(category)
 

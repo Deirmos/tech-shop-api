@@ -16,9 +16,16 @@ class OrderCRUD:
         order_id: int
     ) -> Order | None:
         
-        order = await db.execute(select(Order).where(Order.id == order_id).options(selectinload(Order.items)))
+        result = await db.execute(
+            select(Order)
+            .options(
+                selectinload(Order.items),
+                selectinload(Order.user)
+            )
+            .where(Order.id == order_id)
+        )
 
-        return order.scalar_one_or_none()
+        return result.scalar_one_or_none()
     
     @staticmethod
     async def _create_order_record(db: AsyncSession, user_id: int, total_price: Decimal, items: list) -> Order:
@@ -49,7 +56,7 @@ class OrderCRUD:
         order.status = new_status
 
         await db.flush()
-        await db.refresh(order)
+        await db.refresh(order, attribute_names=["user", "items"])
         
         return order
     

@@ -64,7 +64,7 @@ async def edit_order_status_by_id(
     
     order = await order_service.edit_one_order_status_by_id(db, order_id, new_status)
 
-    return order
+    return OrderResponse.model_validate(order, from_attributes=True)
 
 @admin_router.get("/all", response_model=List[OrderResponse])
 async def get_all_orders_admin(

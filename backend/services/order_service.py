@@ -162,7 +162,7 @@ class OrderService:
         updated_order = await order_crud.edit_order_status_by_id(db, order_id, new_status)
 
         await db.commit()
-        await db.refresh(updated_order)
+        await db.refresh(updated_order, attribute_names=["user", "items"])
 
         return updated_order
     

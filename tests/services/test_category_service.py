@@ -32,14 +32,7 @@ class TestCategoryService:
 
         await category_service.delete_one_category_by_id(db_session, category.id)
 
-        from sqlalchemy import select
-
-        result = await db_session.execute(select(Category)
-            .where(Category.id == category.id))
-        
-        deleted_category = result.scalar_one_or_none()
-
-        assert deleted_category is None
+        assert category.is_delete == True
 
     async def test_delete_one_category_by_id_not_found(
             self,

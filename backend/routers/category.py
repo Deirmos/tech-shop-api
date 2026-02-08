@@ -68,3 +68,29 @@ async def delete_category(
 ):
     
     return await category_service.delete_one_category_by_id(db, category_id)
+
+@admin_router.patch("/{category_id}", response_model=CategoryResponse)
+async def restore_category_by_id(
+    category_id: int,
+    user: User = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db)
+):
+    
+    return await category_service.restore_category(db, category_id)
+
+@admin_router.get("/", response_model=List[CategoryResponse])
+async def get_all_categories_admin(
+    is_delete: bool | None = None,
+    skip: int = 0,
+    limit: int = 10,
+    user: User = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db)
+):
+    
+    return await category_service.get_all_categories_for_admin(
+        db,
+        is_delete=is_delete,
+        skip=skip,
+        limit=limit
+    )
+

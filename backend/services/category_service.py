@@ -95,7 +95,7 @@ class CategoryService:
         limit: int = 10
     ):
         
-        categories = await category_crud._get_all_categories(
+        categories = await category_crud.get_all_categories(
             db,
             skip=skip,
             limit=limit
@@ -103,4 +103,47 @@ class CategoryService:
 
         return categories
     
+    @staticmethod
+    async def get_all_categories_for_admin(
+        db: AsyncSession,
+        is_delete: bool,
+        skip: int = 0,
+        limit: int = 10
+    ):
+        
+        categories = await category_crud.get_all_categories_for_admin(
+            db,
+            is_delete=is_delete,
+            skip=skip,
+            limit=limit
+        )
+
+        return categories
+    
+    @staticmethod
+    async def restore_category(
+        db: AsyncSession,
+        category_id: int
+    ):
+        try:
+            category = await category_crud.restore_category_by_id(db, category_id)
+
+            if category is None:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Категории с ID({category_id}) не найдено"
+                )
+            
+            await db.commit()
+            await db.refresh(category)
+
+            return category
+        
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(e)
+            )
+        
+            
 category_service = CategoryService()

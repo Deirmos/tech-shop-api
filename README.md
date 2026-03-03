@@ -12,6 +12,7 @@
 - **Soft Delete**: мягкое удаление категорий и товаров.
 - **Email Engine**: HTML-письма через Jinja2.
 - **RabbitMQ**: асинхронная отправка email через очередь, retry и DLQ.
+- **Redis Cache**: кэширование read-heavy запросов на сервисном слое.
 
 ## 🏗 Архитектура
 
@@ -35,11 +36,13 @@ pytest -v
 ```
 
 Важно: для тестов требуется `RABBITMQ_URL` в окружении (можно фиктивный), иначе `Settings()` не инициализируется.
+Также, если `REDIS_URL` не задан, кэш автоматически отключается — тесты выполняются как раньше.
 
 ## 🧰 Технологический стек
 
 - FastAPI
 - PostgreSQL + SQLAlchemy (Async)
+- Redis
 - Alembic
 - RabbitMQ (aio-pika)
 - Jinja2
@@ -55,6 +58,11 @@ ReDoc: http://127.0.0.1:8000/redoc
 ```bash
 pip install -r requirements.txt
 uvicorn backend.main:app --reload
+```
+
+Redis опционален. Чтобы включить кэш локально, добавьте в `.env`:
+```env
+REDIS_URL=redis://localhost:6379/0
 ```
 
 ## 🐳 Docker
@@ -101,6 +109,7 @@ docker compose up --build
 - `db` — PostgreSQL
 - `rabbitmq` — брокер + UI
 - `worker` — консюмер RabbitMQ
+- `redis` — Redis кэш
 
 RabbitMQ UI: http://localhost:15672 (логин/пароль: `rabbit` / `rabbit`).
 
@@ -126,6 +135,7 @@ RabbitMQ UI: http://localhost:15672 (логин/пароль: `rabbit` / `rabbit
 - **Soft Delete**: products/categories keep history intact.
 - **Email Engine**: Jinja2 HTML templates.
 - **RabbitMQ**: async email delivery with retry and DLQ.
+- **Redis Cache**: caching read-heavy queries at the service layer.
 
 ## 🏗 Architecture
 
@@ -145,11 +155,13 @@ pytest -v
 ```
 
 Note: tests expect `RABBITMQ_URL` in env (can be dummy) to initialize settings.
+If `REDIS_URL` is not set, cache is disabled automatically — tests behave as before.
 
 ## 🧰 Tech Stack
 
 - FastAPI
 - PostgreSQL + SQLAlchemy (Async)
+- Redis
 - Alembic
 - RabbitMQ (aio-pika)
 - Jinja2
@@ -165,6 +177,11 @@ ReDoc: http://127.0.0.1:8000/redoc
 ```bash
 pip install -r requirements.txt
 uvicorn backend.main:app --reload
+```
+
+Redis is optional. To enable cache locally, add to `.env`:
+```env
+REDIS_URL=redis://localhost:6379/0
 ```
 
 ## 🐳 Docker
@@ -209,6 +226,7 @@ Services:
 - `db` — PostgreSQL
 - `rabbitmq` — broker + UI
 - `worker` — RabbitMQ consumer
+- `redis` - Redis cache
 
 RabbitMQ UI: http://localhost:15672 (user/pass: `rabbit` / `rabbit`).
 

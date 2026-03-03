@@ -85,6 +85,7 @@ RABBITMQ_RETRY_QUEUE=email.order_confirmation.retry
 RABBITMQ_DLQ_QUEUE=email.order_confirmation.dlq
 RABBITMQ_RETRY_DELAY_SECONDS=30
 RABBITMQ_MAX_RETRIES=5
+REDIS_URL=redis://redis:6379/0
 
 DEBUG=True
 ```
@@ -192,6 +193,7 @@ RABBITMQ_RETRY_QUEUE=email.order_confirmation.retry
 RABBITMQ_DLQ_QUEUE=email.order_confirmation.dlq
 RABBITMQ_RETRY_DELAY_SECONDS=30
 RABBITMQ_MAX_RETRIES=5
+REDIS_URL=redis://redis:6379/0
 
 DEBUG=True
 ```

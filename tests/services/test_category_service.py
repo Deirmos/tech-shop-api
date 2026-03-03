@@ -144,4 +144,4 @@ class TestCategoryService:
         categories = await category_service.get_all_categories(db_session, skip=1, limit=2)
 
         assert len(categories) == 2
-        assert cat2 in categories and cat3 in categories
+        assert {c.id for c in categories} == {cat2.id, cat3.id}

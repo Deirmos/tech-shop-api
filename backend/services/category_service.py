@@ -4,11 +4,13 @@ from slugify import slugify
 
 from backend.crud.category import category_crud
 from backend.crud.product import product_crud
-from backend.schemas.category import CategoryCreate, CategoryUpdate
+from backend.schemas.category import CategoryCreate, CategoryUpdate, CategoryResponse
+from backend.core.cache import cacheable, cache_invalidate
 
 class CategoryService:
     
     @staticmethod
+    @cache_invalidate(patterns=["categories:*"])
     async def create_category(
         db: AsyncSession,
         category_data: CategoryCreate
@@ -28,6 +30,7 @@ class CategoryService:
         return category
     
     @staticmethod
+    @cache_invalidate(patterns=["categories:*"])
     async def delete_one_category_by_id(
         db: AsyncSession,
         category_id: int
@@ -53,6 +56,7 @@ class CategoryService:
         return True
     
     @staticmethod
+    @cache_invalidate(patterns=["categories:*"])
     async def edit_one_category_by_id(
         db: AsyncSession,
         category_id: int,
@@ -73,6 +77,7 @@ class CategoryService:
         return category
     
     @staticmethod
+    @cacheable(ttl=120, key="categories:by_id:{category_id}", decoder=CategoryResponse)
     async def get_one_category_by_id(
         db: AsyncSession,
         category_id: int
@@ -89,6 +94,7 @@ class CategoryService:
         return category
     
     @staticmethod
+    @cacheable(ttl=60, key="categories:list:{skip}:{limit}", decoder=CategoryResponse)
     async def get_all_categories(
         db: AsyncSession,
         skip: int = 0,
@@ -121,6 +127,7 @@ class CategoryService:
         return categories
     
     @staticmethod
+    @cache_invalidate(patterns=["categories:*"])
     async def restore_category(
         db: AsyncSession,
         category_id: int

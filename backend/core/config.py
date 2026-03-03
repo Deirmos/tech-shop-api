@@ -5,6 +5,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     TEST_DATABASE_URL: str
     SECRET_KEY: str
+    REDIS_URL: str | None = None
 
     MAIL_USERNAME: str
     MAIL_PASSWORD: str

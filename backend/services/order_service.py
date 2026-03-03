@@ -18,12 +18,14 @@ from backend.models.order import Order
 from backend.services.email_service import email_service
 
 from backend.core.rabbitmq import publisher_email_event
+from backend.core.cache import cache_invalidate
 
 logger = logging.getLogger(__name__)
 
 class OrderService:
 
     @staticmethod
+    @cache_invalidate(patterns=["products:*"])
     async def create_order(
         db: AsyncSession,
         order_data: OrderCreate,
@@ -113,6 +115,7 @@ class OrderService:
         )
     
     @staticmethod
+    @cache_invalidate(patterns=["products:*"])
     async def edit_one_order_status_by_id(
         db: AsyncSession,
         order_id: int,
@@ -183,6 +186,7 @@ class OrderService:
         )
     
     @staticmethod
+    @cache_invalidate(patterns=["products:*"])
     async def create_order_from_cart(
         db: AsyncSession,
         user_id: int,

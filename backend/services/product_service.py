@@ -1,16 +1,17 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 from fastapi import HTTPException, status
 from typing import Optional
 from decimal import Decimal
 
 from backend.crud.product import product_crud
 from backend.crud.category import category_crud
-from backend.schemas.product import ProductCreate, ProductEdit
+from backend.schemas.product import ProductCreate, ProductEdit, ProductResponse
+from backend.core.cache import cacheable, cache_invalidate
 
 class ProductService:
     
     @staticmethod
+    @cache_invalidate(patterns=["products:*"])
     async def create_product(
         db: AsyncSession,
         product_data: ProductCreate
@@ -39,6 +40,11 @@ class ProductService:
         return product
     
     @staticmethod
+    @cacheable(
+        ttl=30,
+        key="products:list:{skip}:{limit}:{min_price}:{max_price}:{category_id}:{show_deleted}",
+        decoder=ProductResponse
+    )
     async def get_products_list(
         db: AsyncSession,
         skip: int = 0,
@@ -60,6 +66,7 @@ class ProductService:
         )
     
     @staticmethod
+    @cacheable(ttl=60, key="products:by_id:{product_id}:{show_deleted}", decoder=ProductResponse)
     async def get_one_product_by_id(
         db: AsyncSession,
         product_id: int,
@@ -77,6 +84,7 @@ class ProductService:
         return product
     
     @staticmethod
+    @cacheable(ttl=20, key="products:search:{name_query}", decoder=ProductResponse)
     async def search_products_by_name(
         db: AsyncSession,
         name_query: str
@@ -92,6 +100,7 @@ class ProductService:
         return products
     
     @staticmethod
+    @cache_invalidate(patterns=["products:*"])
     async def edit_one_product_by_id(
         db: AsyncSession,
         product_id: int,
@@ -112,6 +121,7 @@ class ProductService:
         return product
     
     @staticmethod
+    @cache_invalidate(patterns=["products:*"])
     async def delete_one_product_by_id(
         db: AsyncSession,
         product_id: int
@@ -130,6 +140,7 @@ class ProductService:
         return {"message": f"Товар с ID({product_id}) успешно удален"}
     
     @staticmethod
+    @cache_invalidate(patterns=["products:*"])
     async def restore_one_product_by_id(
         db: AsyncSession,
         product_id: int
@@ -165,6 +176,7 @@ class ProductService:
         return products
     
     @staticmethod
+    @cache_invalidate(patterns=["products:*"])
     async def update_product_image(
         db: AsyncSession,
         product_id: int,

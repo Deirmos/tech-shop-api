@@ -213,5 +213,5 @@ RabbitMQ UI: http://localhost:15672 (user/pass: `rabbit` / `rabbit`).
 ## 🛣 Roadmap
 
 - [x] Docker & Docker Compose
-- [ ] Redis caching
+- [x] Redis caching
 - [ ] CI/CD (GitHub Actions)

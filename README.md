@@ -106,7 +106,7 @@ RabbitMQ UI: http://localhost:15672 (логин/пароль: `rabbit` / `rabbit
 ## 🛣 Roadmap
 
 - [x] Docker & Docker Compose
-- [ ] Redis для кеширования
+- [x] Redis для кеширования
 - [ ] CI/CD (GitHub Actions)
 
 ---

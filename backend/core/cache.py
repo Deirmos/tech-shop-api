@@ -26,6 +26,16 @@ def get_redis() -> redis.Redis | None:
     return _redis
 
 
+async def close_redis() -> None:
+    global _redis
+    if _redis is None:
+        return
+    try:
+        await _redis.aclose()
+    finally:
+        _redis = None
+
+
 class _SafeDict(dict):
     def __missing__(self, key: str) -> str:
         return ""

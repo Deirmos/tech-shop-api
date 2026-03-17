@@ -96,6 +96,13 @@ async def upload_product_image(
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(get_current_admin_user)
 ):
+
+    if not file.filename:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Файл без имени недопустим"
+        )
+
     file_extension = file.filename.split(".")[-1].lower()
     
     if file_extension not in ALLOWED_EXTENSIONS:
@@ -116,7 +123,7 @@ async def upload_product_image(
         image = Image.open(io.BytesIO(content))
         image.verify()
 
-        if image.format.lower() not in ["jpeg", "png"]:
+        if not image.format or image.format.lower() not in ["jpeg", "png"]:
             raise Exception("Неверный внутренний формат изображения")
         
     except Exception:

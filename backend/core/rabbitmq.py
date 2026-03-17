@@ -92,24 +92,40 @@ async def publisher_email_event(payload: dict) -> None:
     )
 
     last_error: Optional[Exception] = None
-    for attempt in range(1, settings.RABBITMQ_MAX_RETRIES + 1):
+    try:
+        for attempt in range(1, settings.RABBITMQ_MAX_RETRIES + 1):
+            try:
+                await email_exchange.publish(
+                    message, routing_key=settings.RABBITMQ_EMAIL_QUEUE
+                )
+                return
+            except Exception as exc:  # pragma: no cover - depends on broker state
+                last_error = exc
+                delay = min(2 ** attempt, 10)
+                logger.warning(
+                    "RabbitMQ publish failed (attempt %s/%s). Retrying in %ss.",
+                    attempt,
+                    settings.RABBITMQ_MAX_RETRIES,
+                    delay,
+                    exc_info=True,
+                )
+                await asyncio.sleep(delay)
+        logger.error("RabbitMQ publish failed after retries.", exc_info=last_error)
+        if last_error:
+            raise last_error
+    finally:
         try:
-            await email_exchange.publish(
-                message, routing_key=settings.RABBITMQ_EMAIL_QUEUE
-            )
-            return
-        except Exception as exc:  # pragma: no cover - depends on broker state
-            last_error = exc
-            delay = min(2 ** attempt, 10)
-            logger.warning(
-                "RabbitMQ publish failed (attempt %s/%s). Retrying in %ss.",
-                attempt,
-                settings.RABBITMQ_MAX_RETRIES,
-                delay,
-                exc_info=True,
-            )
-            await asyncio.sleep(delay)
+            await channel.close()
+        except Exception:
+            logger.debug("RabbitMQ channel close failed.", exc_info=True)
 
-    logger.error("RabbitMQ publish failed after retries.", exc_info=last_error)
-    if last_error:
-        raise last_error
+
+async def close_rabbitmq() -> None:
+    global _connection, _topology_ready
+    if _connection is None:
+        return
+    try:
+        await _connection.close()
+    finally:
+        _connection = None
+        _topology_ready = False

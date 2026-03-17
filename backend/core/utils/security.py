@@ -1,13 +1,12 @@
-import os
-from dotenv import load_dotenv
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from datetime import datetime, timedelta, timezone
 import hashlib
 
-load_dotenv()
+from backend.core.config import settings
 
-SECRET_KEY = os.getenv("SECRET_KEY")
+
+SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 

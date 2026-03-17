@@ -1,12 +1,24 @@
 import os
+from contextlib import asynccontextmanager
 from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.routers import user, product, order, category, cart
+from backend.core.cache import close_redis
+from backend.core.rabbitmq import close_rabbitmq
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    try:
+        yield
+    finally:
+        await close_redis()
+        await close_rabbitmq()
 
 app = FastAPI(
     title="E-Commerce API",
-    version="1.0 | BETA"
+    version="1.0 | BETA",
+    lifespan=lifespan
     )
 
 app.add_middleware(

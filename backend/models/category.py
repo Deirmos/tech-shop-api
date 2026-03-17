@@ -1,8 +1,6 @@
 from sqlalchemy import Integer, String, Text, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import List
-from sqlalchemy import text
-
 from backend.core.database import Base
 
 class Category(Base):
@@ -16,7 +14,7 @@ class Category(Base):
 
     description: Mapped[Text] = mapped_column(Text, nullable=True)
     
-    is_delete: Mapped[bool] = mapped_column(Boolean, server_default=text("false"), nullable=False)
+    is_delete: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     products: Mapped[List["Product"]] = relationship(
         "Product",

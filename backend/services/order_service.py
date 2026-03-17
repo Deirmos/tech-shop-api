@@ -1,21 +1,19 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status
-from typing import Optional, List
+from typing import Optional
 from sqlalchemy import select
 from fastapi import BackgroundTasks
 import logging
 
 from backend.crud.order import order_crud
 from backend.crud.product import product_crud
-from backend.schemas.order import OrderCreate, OrderUpdate
+from backend.schemas.order import OrderCreate
 from backend.models.order_item import OrderItem
 from backend.models.user import User
 from backend.models.product import Product
 from backend.core.utils.order_status_enums import OrderStatus
 
 from backend.crud.cart import cart_crud
-from backend.models.order import Order
-from backend.services.email_service import email_service
 
 from backend.core.rabbitmq import publisher_email_event
 from backend.core.cache import cache_invalidate

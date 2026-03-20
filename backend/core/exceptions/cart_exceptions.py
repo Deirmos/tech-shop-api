@@ -1,28 +1,18 @@
-class CartError(Exception):
-    default_message = "Произошла ошибка с корзиной"
-    error_code = "cart_error"
-    status_code = 400
+from backend.core.exceptions.base import AppError
 
-    def __init__(self, message=None):
-        self.message = message or self.default_message
-        super().__init__(self.message)
-
-class ProductNotFoundError(CartError):
-    error_code = "product_not_found"
-    status_code = 404
-
-    def __init__(self, product_id):
-        self.product_id = product_id
-        super().__init__(f"Товар с id {product_id} не найден")
-
-class ProductDeletedError(CartError):
+class ProductDeletedError(AppError):
     default_message = "Продукт был удален из корзины"
     error_code = "product_deleted"
 
-class InsufficientStockError(CartError):
-    default_message = "Недостаточно товара на складе"
-    error_code = "insufficient_stock"
+class CartInsufficientStockError(AppError):
+    error_code = "cart_insufficient_stock"
+    status_code = 400
 
-class CartEmptyError(CartError):
+    def __init__(self, product_name, available_stock):
+        self.product_name = product_name
+        self.available_stock = available_stock
+        super().__init__(f"Недостаточно товара '{product_name}' на складе. Доступно: {available_stock}")
+
+class CartEmptyError(AppError):
     error_code = "cart_empty"
     status_code = 400

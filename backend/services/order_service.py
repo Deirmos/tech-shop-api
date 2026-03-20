@@ -1,5 +1,4 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import HTTPException, status
 from typing import Optional
 from sqlalchemy import select
 from fastapi import BackgroundTasks
@@ -17,6 +16,10 @@ from backend.crud.cart import cart_crud
 
 from backend.core.rabbitmq import publisher_email_event
 from backend.core.cache import cache_invalidate
+
+from backend.core.exceptions.product_exceptions import *
+from backend.core.exceptions.order_exceptions import *
+from backend.core.exceptions.cart_exceptions import CartEmptyError
 
 logger = logging.getLogger(__name__)
 
@@ -36,16 +39,10 @@ class OrderService:
                 product = await product_crud.get_product_by_id(db, item.product_id, for_update=True)
 
                 if not product:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail=f"Товар {item.product_id} не найден"
-                    )
+                    raise ProductNotFoundError(item.product_id)
                 
                 if product.stock < item.quantity:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Недостаточно товара {product.name} на складе"
-                    )
+                    raise ProductInsufficientStockError(product.name)
             
                 total_price += product.price * item.quantity
                 product.stock -= item.quantity
@@ -82,16 +79,10 @@ class OrderService:
         order = await order_crud.get_oder_by_id(db, order_id)
 
         if order is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Заказа под ID({order_id}) не найдено"
-            )
+            raise OrderNotFoundError(order_id)
         
         if not current_user.is_admin and order.user_id != current_user.id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="У вас недостаточно прав"
-            )
+            raise OrderAdminRequiredError()
         
         return order
     
@@ -123,37 +114,30 @@ class OrderService:
         order = await order_crud.get_oder_by_id(db, order_id)
 
         if not order:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Заказа под ID({order_id}) не найдено"
-            )
+            raise OrderNotFoundError(order_id)
         
         old_status = order.status
         
         if order.status == OrderStatus.SHIPPED and new_status == OrderStatus.CANCELLED:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Нельзя отменить заказ, который уже доставляется"
+            raise OrderInvalidStatusTransitionError(
+                "Нельзя отменить заказ, который уже доставляется"
             )
         
         if order.status == OrderStatus.COMPLETED and new_status != OrderStatus.COMPLETED:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Нельзя изменить статус законченного заказа"
+            raise OrderInvalidStatusTransitionError(
+                "Нельзя изменить статус законченного заказа"
             )
         
         if order.status == OrderStatus.SHIPPED and new_status != OrderStatus.COMPLETED:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Нельзя изменить статус товара в доставке на что-то, кроме 'Доставлен'"
+            raise OrderInvalidStatusTransitionError(
+                "Нельзя изменить статус товара в доставке на что-то, кроме 'Доставлен'"
             )
 
         if order.status == OrderStatus.CANCELLED and new_status != OrderStatus.CANCELLED:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Нельзя изменить статус отмененного заказа"
+            raise OrderInvalidStatusTransitionError(
+                "Нельзя изменить статус отмененного заказа"
             )
-        
+            
         if new_status == OrderStatus.CANCELLED and old_status != OrderStatus.CANCELLED:
             for item in order.items:
                 product = await product_crud.get_product_by_id(db, item.product_id)
@@ -194,9 +178,8 @@ class OrderService:
         cart_items = await cart_crud.get_user_cart(db, user_id)
 
         if not cart_items:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Ваша корзина пуста. Нечего оформлять!"
+            raise CartEmptyError(
+                "Ваша карзина пуста. Нечего заказывать!"
             )
         
         products_ids = [ci.product_id for ci in cart_items]
@@ -216,12 +199,12 @@ class OrderService:
             for cart_item in cart_items:
                 product = products_map.get(cart_item.product_id)
 
-                if not product or product.stock < cart_item.quantity:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Недостаточно товара {product.name if product else f'ID({str(cart_item.product_id)})'}"
-                    )
-                
+                if not product:
+                    raise ProductNotFoundError(cart_item.product_id)
+
+                if product.stock < cart_item.quantity:
+                    raise ProductInsufficientStockError(product.name)
+
                 total_price += product.price * cart_item.quantity
                 product.stock -= cart_item.quantity
 

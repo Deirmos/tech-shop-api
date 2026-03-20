@@ -3,9 +3,12 @@ from contextlib import asynccontextmanager
 from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from backend.routers import user, product, order, category, cart
 from backend.core.cache import close_redis
 from backend.core.rabbitmq import close_rabbitmq
+
+from backend.core.exception_handlers import register_exception_handlers
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -20,6 +23,8 @@ app = FastAPI(
     version="1.0 | BETA",
     lifespan=lifespan
     )
+
+register_exception_handlers(app)
 
 app.add_middleware(
     CORSMiddleware,

@@ -1,12 +1,23 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import HTTPException, status
 from typing import Optional
 from decimal import Decimal
+from fastapi import UploadFile
+from pathlib import Path
+from PIL import Image
+import io
+import uuid
+import aiofiles
 
 from backend.crud.product import product_crud
 from backend.crud.category import category_crud
 from backend.schemas.product import ProductCreate, ProductEdit, ProductResponse
 from backend.core.cache import cacheable, cache_invalidate
+
+from backend.core.exceptions.product_exceptions import *
+from backend.core.exceptions.category_exceptions import *
+
+MAX_FILE_SIZE = 5 * 1024 * 1024
+ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png"}
 
 class ProductService:
     
@@ -19,18 +30,12 @@ class ProductService:
         category = await category_crud.get_category_by_id(db, product_data.category_id)
 
         if not category:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Категории с id {product_data.category_id} не найдено"
-            )
+            raise CategoryNotFoundError(product_data.category_id)
         
         existing_product = await product_crud.get_product_by_name(db, product_data.name)
 
         if existing_product is not None:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Товар с таким именем уже существует"
-            )
+            raise ProductAlreadyExistsError(product_data.name)
         
         product = await product_crud.create_product(db, product_data)
 
@@ -76,10 +81,7 @@ class ProductService:
         product = await product_crud.get_product_by_id(db, product_id, show_deleted)
 
         if not product:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Товара с ID({product_id}) не найдено"
-            )
+            raise ProductNotFoundError(product_id)
         
         return product
     
@@ -110,10 +112,7 @@ class ProductService:
         product = await product_crud.edit_product_by_id(db, product_id, updated_data)
 
         if product is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Товара с ID({product_id}) не найдено"
-            )
+            raise ProductNotFoundError(product_id)
         
         await db.commit()
         await db.refresh(product)
@@ -129,11 +128,8 @@ class ProductService:
         
         product = await product_crud.delete_product_by_id(db, product_id)
 
-        if product is False:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Товара с ID({product_id}) не найдено"
-            )
+        if product is False or product is None:
+            raise ProductNotFoundError(product_id)
         
         await db.commit()
 
@@ -149,21 +145,15 @@ class ProductService:
             product = await product_crud.restore_product_by_id(db, product_id)
 
             if product is None:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Товара с ID({product_id}) не найдено"
-                )
+                raise ProductNotFoundError(product_id)
             
             await db.commit()
             await db.refresh(product)
 
             return product
         
-        except ValueError as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=str(e)
-            )
+        except ValueError:
+            raise ProductNotDeletedError()
     
     @staticmethod
     async def get_all_products_by_id(
@@ -180,18 +170,51 @@ class ProductService:
     async def update_product_image(
         db: AsyncSession,
         product_id: int,
-        image_path: str
+        file: UploadFile
     ):
         
         product = await product_crud.get_product_by_id(db, product_id)
 
         if not product:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Товара под ID({product_id}) не найдено"
-            )
-        
-        product.image_url = image_path
+            raise ProductNotFoundError(product_id)
+
+        if not file.filename:
+            raise ProductMissingImageNameError()
+
+        file_extension = file.filename.split(".")[-1].lower()
+
+        if file_extension not in ALLOWED_EXTENSIONS:
+            raise ProductInvalidImageExtensionError(ALLOWED_EXTENSIONS)
+
+        content = await file.read()
+
+        if len(content) > MAX_FILE_SIZE:
+            raise ProductTooLargeImageError()
+
+        try:
+            image = Image.open(io.BytesIO(content))
+            image.verify()
+
+            if not image.format or image.format.lower() not in ["jpeg", "png"]:
+                raise ProductInvalidImageFormatError()
+
+        except ProductInvalidImageFormatError:
+            raise
+        except Exception:
+            raise ProductInvalidImageError()
+
+        base_dir = Path(__file__).resolve().parent.parent
+        upload_dir = base_dir / "static" / "products"
+        upload_dir.mkdir(parents=True, exist_ok=True)
+
+        file_name = f"{uuid.uuid4()}.{file_extension}"
+        full_save_path = upload_dir / file_name
+        db_path = f"static/products/{file_name}"
+
+        async with aiofiles.open(full_save_path, mode="wb") as buffer:
+            await buffer.write(content)
+
+        product.image_url = db_path
         await db.commit()
         await db.refresh(product)
 

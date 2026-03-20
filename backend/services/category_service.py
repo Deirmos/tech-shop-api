@@ -1,11 +1,12 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import HTTPException, status
 from slugify import slugify
 
 from backend.crud.category import category_crud
 from backend.crud.product import product_crud
 from backend.schemas.category import CategoryCreate, CategoryUpdate, CategoryResponse
 from backend.core.cache import cacheable, cache_invalidate
+
+from backend.core.exceptions.category_exceptions import *
 
 class CategoryService:
     
@@ -39,20 +40,15 @@ class CategoryService:
         products_in_category = await product_crud.get_products_by_category(db, category_id)
 
         if products_in_category:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Нельзя удалить категорию, пока в ней есть товары"
-            )
+            raise CategoryNotEmptyError()
         
         success = await category_crud.delete_category_by_id(db, category_id)
 
         if not success:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Категории не найдено"
-            )
+            raise CategoryNotFoundError(category_id)
         
         await db.commit()
+        
         return True
     
     @staticmethod
@@ -66,10 +62,7 @@ class CategoryService:
         category = await category_crud.edit_category_by_id(db, category_id, updated_data)
 
         if category is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Категории под ID({category_id}) не найдено"
-            )
+            raise CategoryNotFoundError(category_id)
         
         await db.commit()
         await db.refresh(category)
@@ -86,10 +79,7 @@ class CategoryService:
         category = await category_crud.get_category_by_id(db, category_id)
 
         if category is None or category.is_delete == True:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Категории с ID({category_id}) не найдено"
-            )
+            raise CategoryNotFoundError(category_id)
         
         return category
     
@@ -136,21 +126,15 @@ class CategoryService:
             category = await category_crud.restore_category_by_id(db, category_id)
 
             if category is None:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Категории с ID({category_id}) не найдено"
-                )
+                raise CategoryNotFoundError(category_id)
             
             await db.commit()
             await db.refresh(category)
 
             return category
         
-        except ValueError as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=str(e)
-            )
+        except ValueError:
+            raise CategoryNotDeletedError()
         
             
 category_service = CategoryService()

@@ -153,7 +153,7 @@ class ProductCRUD:
             return None
         
         if not product.is_delete:
-            raise ValueError("Нельзя восстановить не удаленный товар")
+            raise ValueError()
         
         product.is_delete = False
 

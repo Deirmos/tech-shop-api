@@ -123,7 +123,7 @@ class CategoryCRUD:
             return None
         
         if not category.is_delete:
-            raise ValueError("Нельзя восстановить не удаленную категорию")
+            raise ValueError()
         
         category.is_delete = False
 

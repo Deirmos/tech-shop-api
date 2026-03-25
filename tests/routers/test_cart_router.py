@@ -71,6 +71,6 @@ class TestCartRouter:
 
         response = await auth_client.delete("/api/cart/")
         
-        response.status_code == 204
+        assert response.status_code == 204
 
         

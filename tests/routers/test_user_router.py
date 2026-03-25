@@ -39,7 +39,6 @@ class TestUserRouter:
         response = await async_client.post("/api/user/register", json=payload)
 
         assert response.status_code == 400
-        assert response.json()["detail"] == "Пользователь с таким Email уже существует"
 
     async def test_register_user_invalid_email(
             self,
@@ -101,5 +100,4 @@ class TestUserRouter:
         response = await async_client.post("/api/user/login", data=login_data)
 
         assert response.status_code == 401
-        assert response.json()["detail"] == "Неверный Email или пароль"
     

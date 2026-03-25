@@ -5,6 +5,8 @@ from backend.services.product_service import product_service
 from backend.schemas.product import ProductCreate, ProductEdit
 from backend.models.product import Product
 
+from backend.core.exceptions.base import AppError
+
 @pytest.mark.asyncio
 class TestProductService:
 
@@ -27,11 +29,12 @@ class TestProductService:
     async def test_create_product_category_not_found(self, db_session):
         data = ProductCreate(name="Test Product", description="Test Desc", price=10, stock=1, category_id=-1)
 
-        with pytest.raises(HTTPException) as excinfo:
+        with pytest.raises(AppError) as excinfo:
             await product_service.create_product(db_session, data)
 
         assert excinfo.value.status_code == status.HTTP_404_NOT_FOUND
-        assert "Категории с id -1 не найдено" in excinfo.value.detail
+        assert excinfo.value.message == "Категория с id(-1) не найдена"
+        assert excinfo.value.error_code == "category_not_found"
 
     async def test_create_product_duplicate_name(self, db_session, category_factory, product_factory):
         cat = await category_factory()
@@ -40,11 +43,12 @@ class TestProductService:
 
         data = ProductCreate(name="Duplicate", description="Test Desc", price=10, stock=10, category_id=cat.id)
 
-        with pytest.raises(HTTPException) as excinfo:
+        with pytest.raises(AppError) as excinfo:
             await product_service.create_product(db_session, data)
 
         assert excinfo.value.status_code == status.HTTP_400_BAD_REQUEST
-        assert "уже существует" in excinfo.value.detail
+        assert excinfo.value.message == "Товар с названием 'Duplicate' уже существует"
+        assert excinfo.value.error_code == "product_already_exists"
 
     async def test_get_one_product_success(self, db_session, category_factory, product_factory):
         cat = await category_factory()
@@ -57,11 +61,12 @@ class TestProductService:
         assert product_found.name == product.name
 
     async def test_get_one_product_not_found(self, db_session):
-        with pytest.raises(HTTPException) as excinfo:
+        with pytest.raises(AppError) as excinfo:
             await product_service.get_one_product_by_id(db_session, -1)
 
         assert excinfo.value.status_code == status.HTTP_404_NOT_FOUND
-        assert excinfo.value.detail == "Товара с ID(-1) не найдено"
+        assert excinfo.value.message == "Товар с id(-1) не найден"
+        assert excinfo.value.error_code == "product_not_found"
 
     async def test_search_product_logic(self, db_session, product_factory):
         await product_factory(name="Super Computer")
@@ -93,26 +98,30 @@ class TestProductService:
         assert restored.is_delete is False
 
     async def test_delete_product_not_found(self, db_session):
-        with pytest.raises(HTTPException) as excinfo:
+        with pytest.raises(AppError) as excinfo:
             await product_service.delete_one_product_by_id(db_session, -1)
 
         assert excinfo.value.status_code == status.HTTP_404_NOT_FOUND
-        assert excinfo.value.detail == "Товара с ID(-1) не найдено"
+        assert excinfo.value.message == "Товар с id(-1) не найден"
+        assert excinfo.value.error_code == "product_not_found"
 
     async def test_restore_error_logic(self, db_session, product_factory):
         product = await product_factory(name="Not Deleted Yet")
 
-        with pytest.raises(HTTPException) as excinfo:
+        with pytest.raises(AppError) as excinfo:
             await product_service.restore_one_product_by_id(db_session, product.id)
         
         assert excinfo.value.status_code == status.HTTP_400_BAD_REQUEST
+        assert excinfo.value.message == "Нельзя восстановить не удаленный товар"
+        assert excinfo.value.error_code == "product_not_deleted"
 
     async def test_restore_product_not_found(self, db_session):
-        with pytest.raises(HTTPException) as excinfo:
+        with pytest.raises(AppError) as excinfo:
             await product_service.restore_one_product_by_id(db_session, -1)
 
         assert excinfo.value.status_code == status.HTTP_404_NOT_FOUND
-        assert excinfo.value.detail == "Товара с ID(-1) не найдено"
+        assert excinfo.value.message == "Товар с id(-1) не найден"
+        assert excinfo.value.error_code == "product_not_found"
 
     async def test_get_products_list(
             self,

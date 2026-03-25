@@ -179,7 +179,7 @@ class OrderService:
 
         if not cart_items:
             raise CartEmptyError(
-                "Ваша карзина пуста. Нечего заказывать!"
+                "Ваша корзина пуста. Нечего заказывать!"
             )
         
         products_ids = [ci.product_id for ci in cart_items]

@@ -45,9 +45,9 @@ class TestProductRouter:
             "category_id": 1
         }
 
-        response = await auth_client.post("/api/admin/product", json=payload)
+        response = await auth_client.post("/api/admin/product/", json=payload)
 
-        assert response.status_code == 307
+        assert response.status_code == 403
 
     async def test_upload_product_image_success(
             self,

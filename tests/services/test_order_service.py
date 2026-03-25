@@ -8,6 +8,8 @@ from backend.core.utils.order_status_enums import OrderStatus
 from backend.models.order import Order
 from backend.schemas.order import OrderCreate, OrderItemCreate
 
+from backend.core.exceptions.base import AppError
+
 @pytest.mark.asyncio
 class TestOrderService:
 
@@ -56,11 +58,12 @@ class TestOrderService:
             items=[OrderItemCreate(product_id=product.id, quantity=10)]
         )
 
-        with pytest.raises(HTTPException) as excinfo:
+        with pytest.raises(AppError) as excinfo:
             await order_service.create_order(db_session, order_in, user.id)
 
         assert excinfo.value.status_code == status.HTTP_400_BAD_REQUEST
-        assert "Недостаточно товара" in excinfo.value.detail
+        assert excinfo.value.message == "Недостаточно товара 'Limited Item' на складе"
+        assert excinfo.value.error_code == "product_insufficient_stock"
 
     async def test_get_one_order_by_id_success(
             self,
@@ -85,11 +88,12 @@ class TestOrderService:
         
         user = await user_factory(email="testuser@example.com")
 
-        with pytest.raises(HTTPException) as excinfo:
+        with pytest.raises(AppError) as excinfo:
             await order_service.get_one_order_by_id(db_session, -1, user)
 
         assert excinfo.value.status_code == status.HTTP_404_NOT_FOUND
-        assert "Заказа под ID(-1) не найдено" in excinfo.value.detail
+        assert excinfo.value.message == "Заказ с id(-1) не найден"
+        assert excinfo.value.error_code == "order_not_found"
 
     async def test_edit_one_order_by_id_success(
             self,
@@ -111,11 +115,12 @@ class TestOrderService:
             db_session
     ):
         
-        with pytest.raises(HTTPException) as excinfo:
+        with pytest.raises(AppError) as excinfo:
             await order_service.edit_one_order_status_by_id(db_session, -1, OrderStatus.COMPLETED)
         
         assert excinfo.value.status_code == status.HTTP_404_NOT_FOUND
-        assert "Заказа под ID(-1) не найдено" in excinfo.value.detail
+        assert excinfo.value.message == "Заказ с id(-1) не найден"
+        assert excinfo.value.error_code == "order_not_found"
 
     async def test_edit_one_order_by_id_status_error(
             self,
@@ -132,27 +137,30 @@ class TestOrderService:
 
         order1 = await order_factory(user=user, status=OrderStatus.COMPLETED, products_data=products_data)
 
-        with pytest.raises(HTTPException) as excinfo:
+        with pytest.raises(AppError) as excinfo:
             await order_service.edit_one_order_status_by_id(db_session, order1.id, OrderStatus.CANCELLED)
 
         assert excinfo.value.status_code == status.HTTP_400_BAD_REQUEST
-        assert "Нельзя изменить статус законченного заказа" in excinfo.value.detail
+        assert excinfo.value.message == "Нельзя изменить статус законченного заказа"
+        assert excinfo.value.error_code == "order_invalid_status_transition"
 
         order2 = await order_factory(user=user, status=OrderStatus.CANCELLED, products_data=products_data)
 
-        with pytest.raises(HTTPException) as exc:
+        with pytest.raises(AppError) as exc:
             await order_service.edit_one_order_status_by_id(db_session, order2.id, OrderStatus.COMPLETED)
         
         assert exc.value.status_code == status.HTTP_400_BAD_REQUEST
-        assert "Нельзя изменить статус отмененного заказа" in exc.value.detail
+        assert exc.value.message == "Нельзя изменить статус отмененного заказа"
+        assert exc.value.error_code == "order_invalid_status_transition"
 
         order3 = await order_factory(user=user, status=OrderStatus.SHIPPED, products_data=products_data)
 
-        with pytest.raises(HTTPException) as exc2:
+        with pytest.raises(AppError) as exc2:
             await order_service.edit_one_order_status_by_id(db_session, order3.id, OrderStatus.CANCELLED)
         
         assert exc2.value.status_code == status.HTTP_400_BAD_REQUEST
-        assert "Нельзя отменить заказ, который уже доставляется" in exc2.value.detail
+        assert exc2.value.message == "Нельзя отменить заказ, который уже доставляется"
+        assert exc2.value.error_code == "order_invalid_status_transition"
 
     async def test_get_user_orders_history(
             self,
@@ -247,7 +255,7 @@ class TestOrderService:
         bg_tasks.add_task = MagicMock()
 
         
-        with pytest.raises(HTTPException) as exc:
+        with pytest.raises(AppError) as exc:
             await order_service.create_order_from_cart(
                 db=db_session,
                 user_id=user.id,
@@ -256,7 +264,8 @@ class TestOrderService:
             )
         
         assert exc.value.status_code == status.HTTP_400_BAD_REQUEST
-        assert "Недостаточно товара" in exc.value.detail
+        assert exc.value.message == "Недостаточно товара 'Cart Item' на складе"
+        assert exc.value.error_code == "product_insufficient_stock"
 
 
     async def test_create_order_empty_cart(
@@ -267,7 +276,7 @@ class TestOrderService:
         
         user = await user_factory(email="testuser@example.com")
 
-        with pytest.raises(HTTPException) as excinfo:
+        with pytest.raises(AppError) as excinfo:
             await order_service.create_order_from_cart(
                 db_session,
                 user.id,
@@ -276,4 +285,5 @@ class TestOrderService:
             )
 
         assert excinfo.value.status_code == status.HTTP_400_BAD_REQUEST
-        assert "Ваша корзина пуста" in excinfo.value.detail
+        assert excinfo.value.message == "Ваша корзина пуста. Нечего заказывать!"
+        assert excinfo.value.error_code == "cart_empty"

@@ -6,7 +6,7 @@ class CategoryNotFoundError(AppError):
 
     def __init__(self, category_id):
         self.category_id = category_id
-        super().__init__(f"Категория с id {category_id} не найдена")
+        super().__init__(f"Категория с id({category_id}) не найдена")
 
 class CategoryNotEmptyError(AppError):
     default_message = "Нельзя удалить категорию, которая содержит товары"

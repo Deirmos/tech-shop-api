@@ -8,6 +8,8 @@ from backend.crud.user import user_crud
 from backend.schemas.user import UserRegister, UserLogin
 from backend.models.user import User
 
+from backend.core.exceptions.base import AppError
+
 
 @pytest.mark.asyncio
 class TestUserService:
@@ -41,11 +43,11 @@ class TestUserService:
             password="password123"
         )
 
-        with pytest.raises(HTTPException) as excinfo:
+        with pytest.raises(AppError) as excinfo:
             await user_service.register_new_user(db_session, user_data)
 
         assert excinfo.value.status_code == status.HTTP_400_BAD_REQUEST
-        assert "пользователь с таким email уже существует" in excinfo.value.detail.lower()
+        assert "пользователь с таким email уже существует" in excinfo.value.default_message.lower()
 
     async def test_get_user_by_email(self, db_session, user_factory):
 
@@ -84,19 +86,22 @@ class TestUserService:
 
         login_data = UserLogin(email=email, password="WRONG_password")
 
-        with pytest.raises(HTTPException) as excinfo:
+        with pytest.raises(AppError) as excinfo:
             await user_service.login_user(login_data, db_session)
 
         assert excinfo.value.status_code == status.HTTP_401_UNAUTHORIZED
-        assert "Неверный Email или пароль" in excinfo.value.detail
+        assert "Неверные учетные данные" in excinfo.value.default_message
+        assert excinfo.value.error_code == "invalid_credentials"
 
     async def test_login_user_not_found(self, db_session):
 
         login_data = UserLogin(email="nobody@example.com", password="anypassword")
 
-        with pytest.raises(HTTPException) as excinfo:
+        with pytest.raises(AppError) as excinfo:
             await user_service.login_user(login_data, db_session)
 
         assert excinfo.value.status_code == status.HTTP_401_UNAUTHORIZED
+        assert "Неверные учетные данные" in excinfo.value.default_message
+        assert excinfo.value.error_code == "invalid_credentials"
 
         

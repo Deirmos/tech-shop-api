@@ -5,6 +5,8 @@ from backend.models.category import Category
 from backend.services.category_service import category_service
 from backend.schemas.category import CategoryCreate, CategoryUpdate
 
+from backend.core.exceptions.base import AppError
+
 @pytest.mark.asyncio
 class TestCategoryService:
 
@@ -39,11 +41,12 @@ class TestCategoryService:
             db_session,
     ):
         
-        with pytest.raises(HTTPException) as excinfo:
+        with pytest.raises(AppError) as excinfo:
             await category_service.delete_one_category_by_id(db_session, -1)
 
         assert excinfo.value.status_code == status.HTTP_404_NOT_FOUND
-        assert "Категории не найдено" in excinfo.value.detail
+        assert excinfo.value.message == "Категория с id(-1) не найдена"
+        assert excinfo.value.error_code == "category_not_found"
 
     async def test_delete_one_category_by_id_product_error(
             self,
@@ -56,11 +59,12 @@ class TestCategoryService:
 
         await product_factory(name="Test Product", category_id=category.id)
 
-        with pytest.raises(HTTPException) as excinfo:
+        with pytest.raises(AppError) as excinfo:
             await category_service.delete_one_category_by_id(db_session, category.id)
         
         assert excinfo.value.status_code == status.HTTP_400_BAD_REQUEST
-        assert "Нельзя удалить категорию" in excinfo.value.detail
+        assert excinfo.value.message == "Нельзя удалить категорию, которая содержит товары"
+        assert excinfo.value.error_code == "category_not_empty"
 
     async def test_edit_one_category_by_id_success(
             self,
@@ -90,7 +94,7 @@ class TestCategoryService:
         
         updated_data = CategoryUpdate(name="Not found")
 
-        with pytest.raises(HTTPException) as excinfo:
+        with pytest.raises(AppError) as excinfo:
             await category_service.edit_one_category_by_id(
                 db_session,
                 -1,
@@ -98,7 +102,8 @@ class TestCategoryService:
             )
         
         assert excinfo.value.status_code == status.HTTP_404_NOT_FOUND
-        assert "Категории под ID(-1) не найдено" in excinfo.value.detail
+        assert excinfo.value.message == "Категория с id(-1) не найдена"
+        assert excinfo.value.error_code == "category_not_found"
 
     async def test_get_one_category_by_id_success(
             self,
@@ -121,14 +126,15 @@ class TestCategoryService:
             db_session
     ):
         
-        with pytest.raises(HTTPException) as excinfo:
+        with pytest.raises(AppError) as excinfo:
             await category_service.get_one_category_by_id(
                 db_session,
                 -1
             )
 
         assert excinfo.value.status_code == status.HTTP_404_NOT_FOUND
-        assert "Категории с ID(-1) не найдено" in excinfo.value.detail
+        assert excinfo.value.message == "Категория с id(-1) не найдена"
+        assert excinfo.value.error_code == "category_not_found"
 
     async def test_get_all_categories_with_pagination(
             self,

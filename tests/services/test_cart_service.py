@@ -5,6 +5,8 @@ from backend.services.cart_service import cart_service
 from backend.models.cart import CartItem
 from backend.schemas.cart import CartItemAdd, CartSummary
 
+from backend.core.exceptions.base import AppError
+
 @pytest.mark.asyncio
 class TestCartService:
 
@@ -49,11 +51,12 @@ class TestCartService:
             quantity=quantity_to_add
         )
 
-        with pytest.raises(HTTPException) as excinfo:
+        with pytest.raises(AppError) as excinfo:
             await cart_service.add_item_into_cart(db_session, user.id, item_data)
 
         assert excinfo.value.status_code == status.HTTP_404_NOT_FOUND
-        assert "Товара с ID(-1) не найдено" in excinfo.value.detail
+        assert excinfo.value.message == "Товар с id(-1) не найден"
+        assert excinfo.value.error_code == "product_not_found"
 
         product = await product_factory(name="Cart test", price=100, stock=10, is_delete=True)
 
@@ -62,11 +65,12 @@ class TestCartService:
             quantity=quantity_to_add
         )
 
-        with pytest.raises(HTTPException) as exc1:
+        with pytest.raises(AppError) as exc1:
             await cart_service.add_item_into_cart(db_session, user.id, item_data2)
 
         assert exc1.value.status_code == status.HTTP_404_NOT_FOUND
-        assert "не найдено" in exc1.value.detail
+        assert exc1.value.message == f"Товар с id({product.id}) не найден"
+        assert exc1.value.error_code == "product_not_found"
 
         product2 = await product_factory(name="Cart test 2", price=100, stock=1)
 
@@ -75,11 +79,12 @@ class TestCartService:
             quantity=5
         )
 
-        with pytest.raises(HTTPException) as exc2:
+        with pytest.raises(AppError) as exc2:
             await cart_service.add_item_into_cart(db_session, user.id, item_data3)
 
         assert exc2.value.status_code == status.HTTP_400_BAD_REQUEST
-        assert "Недостаточно товара на складе" in exc2.value.detail
+        assert exc2.value.message == "Недостаточно товара 'Cart test 2' на складе. Доступно: 1"
+        assert exc2.value.error_code == "cart_insufficient_stock"
 
     async def test_get_my_cart(
             self,

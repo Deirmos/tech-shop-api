@@ -9,10 +9,12 @@
 - **Async First**: FastAPI + SQLAlchemy 2.0 Async + aiosmtplib.
 - **Order Logic**: валидация остатков, транзакционное создание заказа, возврат остатков при отмене.
 - **Security**: JWT-аутентификация, хеширование паролей (bcrypt), роли User/Admin.
+- **Exceptions**: единая система `AppError` + глобальный хэндлер (стабильные `message`/`code`).
 - **Soft Delete**: мягкое удаление категорий и товаров.
 - **Email Engine**: HTML-письма через Jinja2.
 - **RabbitMQ**: асинхронная отправка email через очередь, retry и DLQ.
 - **Redis Cache**: кэширование read-heavy запросов на сервисном слое.
+- **Fuzzy Search**: поиск товаров через `pg_trgm` (word similarity).
 
 ## 🏗 Архитектура
 
@@ -21,6 +23,8 @@
 - `services/` — бизнес-логика.
 - `models/` — модели БД (SQLAlchemy).
 - `schemas/` — валидация данных (Pydantic).
+- `core/exceptions/` — доменные исключения.
+- `core/exception_handlers.py` — глобальная обработка ошибок.
 - `worker/` — консюмер RabbitMQ для отправки email.
 
 ## 🧪 Тестирование
@@ -57,6 +61,7 @@ ReDoc: http://127.0.0.1:8000/redoc
 
 ```bash
 pip install -r requirements.txt
+alembic upgrade head
 uvicorn backend.main:app --reload
 ```
 
@@ -64,6 +69,8 @@ Redis опционален. Чтобы включить кэш локально,
 ```env
 REDIS_URL=redis://localhost:6379/0
 ```
+
+Примечание: поиск товаров использует расширение PostgreSQL `pg_trgm` — оно ставится миграциями.
 
 ## 🐳 Docker
 
@@ -132,10 +139,12 @@ RabbitMQ UI: http://localhost:15672 (логин/пароль: `rabbit` / `rabbit
 - **Async First**: FastAPI + SQLAlchemy 2.0 Async + aiosmtplib.
 - **Order Logic**: transactional order creation with stock validation and restock on cancel.
 - **Security**: JWT auth, bcrypt password hashing, User/Admin roles.
+- **Exceptions**: unified `AppError` system + global handler (stable `message`/`code`).
 - **Soft Delete**: products/categories keep history intact.
 - **Email Engine**: Jinja2 HTML templates.
 - **RabbitMQ**: async email delivery with retry and DLQ.
 - **Redis Cache**: caching read-heavy queries at the service layer.
+- **Fuzzy Search**: product search via `pg_trgm` (word similarity).
 
 ## 🏗 Architecture
 
@@ -144,6 +153,8 @@ Service Layer pattern:
 - `services/` — business logic.
 - `models/` — DB models (SQLAlchemy).
 - `schemas/` — validation (Pydantic).
+- `core/exceptions/` — domain exceptions.
+- `core/exception_handlers.py` — global error handling.
 - `worker/` — RabbitMQ consumer for email.
 
 ## 🧪 Testing
@@ -176,6 +187,7 @@ ReDoc: http://127.0.0.1:8000/redoc
 
 ```bash
 pip install -r requirements.txt
+alembic upgrade head
 uvicorn backend.main:app --reload
 ```
 
@@ -183,6 +195,8 @@ Redis is optional. To enable cache locally, add to `.env`:
 ```env
 REDIS_URL=redis://localhost:6379/0
 ```
+
+Note: product search relies on PostgreSQL `pg_trgm` extension — it is enabled by migrations.
 
 ## 🐳 Docker
 
